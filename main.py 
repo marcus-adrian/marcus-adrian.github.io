@@ -1,0 +1,38 @@
+#TODO: User data to be taken in via text file, CMD-Line, or other form
+
+from openpyxl import *
+
+def copyWorksheet(workbook, sheetName):
+    source = workbook.active
+    target = workbook.copy_worksheet(source)
+    target.title = sheetName
+    return target
+
+def getRowNumber(worksheet):
+    for row in worksheet
+
+def removeZeroRows(worksheet):
+    isZero = True
+    for row in worksheet.iter_rows(min_row=1, max_col=3, max_row=13, values_only=True):
+        print(row)
+        for item in row:
+            if item == 0:
+                print(True)
+
+def main():
+    print("Main Source file called")
+    streamWorkbook = "ICINoHIStreams.xlsx"
+
+    try:
+        wb = load_workbook(streamWorkbook)
+        overallWS = copyWorksheet(wb, "Overall")
+        wb.save(streamWorkbook)
+        removeZeroRows(overallWS)
+
+
+    except IOError, streamWorkbook:
+        print("Error opening the workbook")
+        print(streamWorkbook)
+
+if __name__ == '__main__':
+    main()
