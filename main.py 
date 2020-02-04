@@ -1,6 +1,13 @@
 #TODO: User data to be taken in via text file, CMD-Line, or other form
 
 from openpyxl import *
+import yaml
+
+def getConfigVariables():
+    with open('config.yaml') as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+
+        print(data)
 
 def copyWorksheet(workbook, sheetName):
     source = workbook.active
@@ -21,6 +28,7 @@ def removeZeroRows(worksheet):
 
 def main():
     print("Main Source file called")
+    getConfigVariables()
     streamWorkbook = "ICINoHIStreams.xlsx"
 
     try:
