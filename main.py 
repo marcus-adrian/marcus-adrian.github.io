@@ -1,13 +1,11 @@
-#TODO: User data to be taken in via text file, CMD-Line, or other form
-
 from openpyxl import *
 import yaml
 
+#Retrieves data from the YAML file and returns a dictionary with the vals.
 def getConfigVariables():
     with open('config.yaml') as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
-
-        print(data)
+        return data
 
 def copyWorksheet(workbook, sheetName):
     source = workbook.active
@@ -15,28 +13,33 @@ def copyWorksheet(workbook, sheetName):
     target.title = sheetName
     return target
 
-def getRowNumber(worksheet):
-    for row in worksheet
-
 def removeZeroRows(worksheet):
-    isZero = True
-    for row in worksheet.iter_rows(min_row=1, max_col=3, max_row=13, values_only=True):
-        print(row)
+    #TODO: Modularize to start from any row, and take in any value to remove
+    maxRow = worksheet.max_row
+    maxCol = worksheet.max_column
+    rowNum = 10 #Magic number, min_row - 1
+    for row in worksheet.iter_rows(min_row=11, min_col=1, max_col=maxCol, max_row=18, values_only=True):
+        rowNum += 1
+        zeroFlag = True #Assume all zero to begin with
         for item in row:
-            if item == 0:
-                print(True)
-
+            if(isinstance(item, (float, long)) and item != None): #Is a number?
+                if(item != 0): #Is it non-zero?
+                    zeroFlag = False
+        if(zeroFlag):
+            worksheet.delete_rows(rowNum, 1)
+    
 def main():
     print("Main Source file called")
-    getConfigVariables()
-    streamWorkbook = "ICINoHIStreams.xlsx"
+    inputData = getConfigVariables()
+    streamWorkbook = inputData["workbookName"]
+    print("Working on: " + str(streamWorkbook))
 
     try:
         wb = load_workbook(streamWorkbook)
         overallWS = copyWorksheet(wb, "Overall")
-        wb.save(streamWorkbook)
+        #wb.save(streamWorkbook)
         removeZeroRows(overallWS)
-
+        #wb.save(streamWorkbook)
 
     except IOError, streamWorkbook:
         print("Error opening the workbook")
