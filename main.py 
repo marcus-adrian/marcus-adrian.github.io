@@ -1,3 +1,5 @@
+# TODO: Some sort of visualizing for the user to see progress on CMD-Line
+
 from openpyxl import *
 import yaml
 
@@ -13,12 +15,11 @@ def copyWorksheet(workbook, sheetName):
     target.title = sheetName
     return target
 
-def removeZeroRows(worksheet):
-    #TODO: Modularize to start from any row, and take in any value to remove
+def removeZeroRows(worksheet, startRow):
     maxRow = worksheet.max_row
     maxCol = worksheet.max_column
-    rowNum = 10 #Magic number, min_row - 1
-    for row in worksheet.iter_rows(min_row=11, min_col=1, max_col=maxCol, max_row=18, values_only=True):
+    rowNum = startRow - 1 #Starting point
+    for row in worksheet.iter_rows(min_row=startRow, min_col=1, max_col=maxCol, max_row=maxRow, values_only=True):
         rowNum += 1
         zeroFlag = True #Assume all zero to begin with
         for item in row:
@@ -27,7 +28,33 @@ def removeZeroRows(worksheet):
                     zeroFlag = False
         if(zeroFlag):
             worksheet.delete_rows(rowNum, 1)
-    
+
+def removeRowsBelow(worksheet, startRow):
+    maxRow = worksheet.max_row
+    worksheet.delete_rows(startRow,maxRow) #Delete from startRow down
+
+def intialCleanup(worksheet):
+    removeRowsBelow(worksheet, 47) #47 used to represent Mass Flows row
+    removeZeroRows(worksheet, 11) #Magic number 11 used for specific start pt.
+
+def entropyCalculations(worksheet):
+    rowIdx = 0
+    maxRow = worksheet.max_row
+    flag = False
+    for row in worksheet.iter_rows(min_row=1, min_col=1, max_col=1, max_row=maxRow, values_only=True):
+        rowIdx += 1
+        for item in row:
+            if(item == "Enthalpy Flow"):
+                flag = True #found the one row I needed
+                newRow = rowIdx + 1
+                worksheet.insert_rows(newRow, 1) #Create new row below Enthalpy
+                titleCell = "A" + str(newRow)
+                unitCell = "B" + str(newRow)
+                worksheet[titleCell] = "Entropy Flow" #Add new name for row
+                worksheet[unitCell] = "kW/K"
+        if(flag):
+            break
+
 def main():
     print("Main Source file called")
     inputData = getConfigVariables()
@@ -37,9 +64,9 @@ def main():
     try:
         wb = load_workbook(streamWorkbook)
         overallWS = copyWorksheet(wb, "Overall")
-        #wb.save(streamWorkbook)
-        removeZeroRows(overallWS)
-        #wb.save(streamWorkbook)
+        intialCleanup(overallWS)
+        entropyCalculations(overallWS)
+        wb.save(streamWorkbook)
 
     except IOError, streamWorkbook:
         print("Error opening the workbook")
