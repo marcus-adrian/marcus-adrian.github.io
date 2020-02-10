@@ -40,8 +40,10 @@ def intialCleanup(worksheet):
 def entropyCalculations(worksheet):
     rowIdx = 0
     maxRow = worksheet.max_row
+    maxCol = worksheet.max_column
     flag = False
-    for row in worksheet.iter_rows(min_row=1, min_col=1, max_col=1, max_row=maxRow, values_only=True):
+    for row in worksheet.iter_rows(min_row=1, min_col=1,
+        max_col=1, max_row=maxRow, values_only=True):
         rowIdx += 1
         for item in row:
             if(item == "Enthalpy Flow"):
@@ -54,13 +56,23 @@ def entropyCalculations(worksheet):
                 worksheet[unitCell] = "kW/K"
         if(flag):
             break
+    conversionFactor = 3600 * 1000
+    print(newRow)
+    #Magic number 3 used to skip the titleCell and unitCell
+
+    for row_cells in worksheet.iter_rows(min_row=newRow, max_row=newRow,
+        min_col=3, max_col=maxCol):
+        #Again magic numbers; can be converted to logic if need be
+        stream_molar_flow = 27
+        stream_molar_entropy = 21
+        for cell in row_cells:
+            cell.value = "yes"
 
 def main():
     print("Main Source file called")
     inputData = getConfigVariables()
     streamWorkbook = inputData["workbookName"]
     print("Working on: " + str(streamWorkbook))
-
     try:
         wb = load_workbook(streamWorkbook)
         overallWS = copyWorksheet(wb, "Overall")
