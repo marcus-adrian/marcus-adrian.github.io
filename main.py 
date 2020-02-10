@@ -57,16 +57,19 @@ def entropyCalculations(worksheet):
         if(flag):
             break
     conversionFactor = 3600 * 1000
-    print(newRow)
-    #Magic number 3 used to skip the titleCell and unitCell
+    #Again magic numbers; can be converted to logic if need be
+    stream_molar_flow = 26
+    stream_molar_entropy = 21
 
     for row_cells in worksheet.iter_rows(min_row=newRow, max_row=newRow,
         min_col=3, max_col=maxCol):
-        #Again magic numbers; can be converted to logic if need be
-        stream_molar_flow = 27
-        stream_molar_entropy = 21
         for cell in row_cells:
-            cell.value = "yes"
+            firstValue = worksheet[str(cell.column_letter) + str(stream_molar_entropy)]
+            secondValue = worksheet[str(cell.column_letter) + str(stream_molar_flow)]
+            if(firstValue.value != None and secondValue.value != None):
+                calculatedValue = (firstValue.value * secondValue.value)/conversionFactor
+                print("Calculated Value: " + str(calculatedValue))
+                cell.value = calculatedValue
 
 def main():
     print("Main Source file called")
