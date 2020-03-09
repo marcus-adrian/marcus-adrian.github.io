@@ -1,7 +1,7 @@
 # TODO: Some sort of visualizing for the user to see progress on CMD-Line
 
-from openpyxl import *
 import yaml
+import openpyxl
 
 #Retrieves data from the YAML file and returns a dictionary with the vals.
 def getConfigVariables():
@@ -15,27 +15,111 @@ def copyWorksheet(workbook, sheetName):
     target.title = sheetName
     return target
 
-def removeZeroRows(worksheet, startRow):
+def removeZeroRows(worksheet):
     maxRow = worksheet.max_row
     maxCol = worksheet.max_column
-    rowNum = startRow - 1 #Starting point
-    for row in worksheet.iter_rows(min_row=startRow, min_col=1, max_col=maxCol, max_row=maxRow, values_only=True):
+    rowNum = 0
+    for row in worksheet.iter_rows(min_row=1, min_col=1, max_col=maxCol, max_row=maxRow, values_only=True):
         rowNum += 1
         zeroFlag = True #Assume all zero to begin with
         for item in row:
-            if(isinstance(item, (float, long)) and item != None): #Is a number?
+            if(isinstance(item, (float, int)) and item != None): #Is a number?
                 if(item != 0): #Is it non-zero?
                     zeroFlag = False
         if(zeroFlag):
             worksheet.delete_rows(rowNum, 1)
 
-def removeRowsBelow(worksheet, startRow):
-    maxRow = worksheet.max_row
-    worksheet.delete_rows(startRow,maxRow) #Delete from startRow down
+def removeRowsBelow(worksheet):
+    rowNum = 0 #loop through and find row for mass flows
+    massFlowArr = []
+    for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=1, values_only=True):
+        rowNum += 1
+        for cell in row:
+            if(cell == "Mass Flows"):
+               massFlowArr.append(rowNum) #More than one intance of mass flow in sheet
+    worksheet.delete_rows(massFlowArr[0] + 1, worksheet.max_row) #Delete from first mass flow cell down
 
-def intialCleanup(worksheet):
-    removeRowsBelow(worksheet, 47) #47 used to represent Mass Flows row
-    removeZeroRows(worksheet, 11) #Magic number 11 used for specific start pt.
+def removeMassRows(worksheet):
+    rowNum = 0 #loop through and find row for mass flows
+    massFlowArr = []
+    for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column, values_only=True):
+        rowNum += 1
+        for cell in row:
+            if(cell != None and isinstance(cell, str)):
+                if("Mass" in cell):
+                   massFlowArr.append(rowNum) #More than one intance of mass flow in sheet
+    del massFlowArr[-1] # want to maintain mass flows 
+    for mass_row in reversed(massFlowArr):
+        worksheet.delete_rows(mass_row, 1) #Delete all rows that have a mention of the word "Mass"
+
+def removeRowsWithKey(worksheet, key):
+    rowNum = 0 #loop through and find row for mass flows
+    keyArr = []
+    for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column, values_only=True):
+        rowNum += 1
+        for cell in row:
+            if(cell != None and isinstance(cell, str)):
+                if(key in cell):
+                   keyArr.append(rowNum) #More than one intance of mass flow in sheet
+    for key_row in reversed(keyArr):
+        worksheet.delete_rows(key_row, 1) #Delete all rows that have a mention of the word "Mass"
+
+
+def findRowWithKey(worksheet, key):
+    rowNum = 0 #loop through and find row for key
+    for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=1, values_only=True):
+        rowNum += 1
+        for cell in row:
+            if(cell != None and isinstance(cell, str)):
+                if(key in cell):
+                   return rowNum
+
+def addTitle(worksheet, title):
+	worksheet.insert_rows(1)
+	worksheet['A1'] = title
+
+def addInOut(worksheet):
+	idx = 0
+	rowNum = 0
+	toArray = []
+	fromArray = []
+	for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column, values_only= True):
+		idx += 1
+		for cell in row:
+			if(cell == "To"): 
+				rowNum = idx
+	idx = 0
+	for cell in worksheet.iter_cols(min_row=rowNum, max_row=rowNum, min_col=1, max_col=worksheet.max_column, values_only=True):
+		idx += 1
+		if(cell[0] != None):
+			toArray.append(idx)
+	idx = 0
+	rowNum = 0
+	for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column, values_only= True):
+		idx += 1
+		for cell in row:
+			if(cell == "From"): 
+				rowNum = idx
+	idx = 0
+	for cell in worksheet.iter_cols(min_row=rowNum, max_row=rowNum, min_col=1, max_col=worksheet.max_column, values_only=True):
+		idx += 1
+		if(cell[0] != None):
+			fromArray.append(idx)
+	fromArray.pop(0)
+	toArray.pop(0)
+	idx = 0
+	for cell in worksheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=worksheet.max_column,values_only=True):
+		idx += 1
+		if idx in fromArray:
+			thisCell = worksheet.cell(row=1, column=idx)
+			thisCell.value = "Out"
+		if idx in toArray:
+			thisCell = worksheet.cell(row=1, column=idx)
+			thisCell.value = "In"
+		if idx in toArray and idx in fromArray:
+			thisCell = worksheet.cell(row=1, column=idx)
+			thisCell.value = "help"
+
 
 def entropyCalculations(worksheet):
     rowIdx = 0
@@ -57,9 +141,9 @@ def entropyCalculations(worksheet):
         if(flag):
             break
     conversionFactor = 3600 * 1000
-    #Again magic numbers; can be converted to logic if need be
-    stream_molar_flow = 26
-    stream_molar_entropy = 21
+
+    stream_molar_flow = findRowWithKey(worksheet, "Mole Flows")
+    stream_molar_entropy = findRowWithKey(worksheet, "Molar Entropy")
 
     for row_cells in worksheet.iter_rows(min_row=newRow, max_row=newRow,
         min_col=3, max_col=maxCol):
@@ -71,23 +155,30 @@ def entropyCalculations(worksheet):
                 print("Calculated Value: " + str(calculatedValue))
                 cell.value = calculatedValue
 
+
+def intialCleanup(worksheet):
+    removeRowsBelow(worksheet)
+    removeZeroRows(worksheet) 
+    removeMassRows(worksheet)
+    removeRowsWithKey(worksheet, "Maximum Relative Error")
+
+def setupWB(worksheet, title):
+	addTitle(worksheet, title)
+	addInOut(worksheet)
+
 def main():
     print("Main Source file called")
     inputData = getConfigVariables()
     streamWorkbook = inputData["workbookName"]
     print("Working on: " + str(streamWorkbook))
-    try:
-        wb = load_workbook(streamWorkbook)
-        overallWS = copyWorksheet(wb, "Overall")
-        intialCleanup(overallWS)
-        entropyCalculations(overallWS)
-        wb.save(streamWorkbook)
+    wb = openpyxl.load_workbook(streamWorkbook)
+    overallWS = copyWorksheet(wb, "Overall")
+    overallTitle = inputData["overallTitle"]
 
-    except IOError, streamWorkbook:
-        print("Error opening the workbook")
-        print(streamWorkbook)
+    intialCleanup(overallWS)
+    setupWB(overallWS, overallTitle)
+    entropyCalculations(overallWS)
+    wb.save(streamWorkbook)
 
 if __name__ == '__main__':
     main()
-
-    
