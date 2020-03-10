@@ -174,11 +174,16 @@ def main():
     wb = openpyxl.load_workbook(streamWorkbook)
     overallWS = copyWorksheet(wb, "Overall")
     overallTitle = inputData["overallTitle"]
-
+    #Begin work on streams workbook
     intialCleanup(overallWS)
     setupWB(overallWS, overallTitle)
     entropyCalculations(overallWS)
     wb.save(streamWorkbook)
+    print("Completed first workbook - Steps 6-8")
+    #Begin work on models workbook 
+    modelWorkbook = inputData["modelbookName"]
+    print("Working on:" + str(modelWorkbook))
+    
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,6 @@
 workbookName: "ICINoHIStreams.xlsx"
+modelbookName: "ICINoHIModels9-24.xlsx"
 overallTitle: "ICI Methanol Streams"
-roee: 1
-computer: 2
+roee: [preperation,synthesis,finishing]
+computer: [preperation, s1,s2,s3]
 test: 3
