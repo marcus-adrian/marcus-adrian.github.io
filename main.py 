@@ -155,11 +155,12 @@ def entropyCalculations(worksheet):
                 # print("Calculated Value: " + str(calculatedValue))
                 cell.value = calculatedValue
 
-def writeSections(worksheet, inputArr):
+def writeSections(worksheet):
+	inputArr = ["Heater", "HXFlux", "Flash2", "RPlug"]
 	writeRow = worksheet.max_row + 5
 	compArr = []
 	startColArr = []
-	nameArr = ["Boundary temperature, K","Entropy Effect (kW/K)","Heat Effect (MW)","Work Effect (MW)"]
+	generalNameArr = ["Boundary temperature, K","Entropy Effect (kW/K)","Heat Effect (MW)","Work Effect (MW)"]
 	idx = 0
 	startColArr.append(1) 
 	for column in worksheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=worksheet.max_column, values_only= True):
@@ -174,7 +175,7 @@ def writeSections(worksheet, inputArr):
 		if locationDict[x] in inputArr:
 			for cntr in range(len(inputArr)):
 				printCell = worksheet.cell(row=writeRow + cntr, column=x)
-				printCell.value = nameArr[cntr]
+				printCell.value = generalNameArr[cntr]
 	totalsColumn = 0
 	lastItem = inputArr[len(inputArr) - 1]
 	idx = 0
@@ -187,10 +188,36 @@ def writeSections(worksheet, inputArr):
 	printCell = worksheet.cell(row=writeRow-1, column=totalsColumn+5)
 	printCell.value = "Sum"
 	# TODO: Add the section names as well as total and sum
+	return writeRow
 
-
-
-
+def writeOtherSections(worksheet, writeRow):
+	idx = 0
+	loc1 = 0
+	loc2 = 0
+	pump_compr_arr = ["Boundary temperature, K","Entropy from Heat (kW/K)","Heat Effect (MW)","Work electricity (MW)","Reversible Work (MW)","Entropy from Work (kW/K)"]
+	for column in worksheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=worksheet.max_column, values_only=True):
+		idx += 1
+		if(column[0] == "Pump"):
+			loc = idx
+		if(column[0] == "Compr"):
+			loc2 = idx
+	for x in range(len(pump_compr_arr)-1):
+		printCell = worksheet.cell(row=writeRow+x, column=loc)
+		printCell.value = pump_compr_arr[x]
+	for x in range(len(pump_compr_arr)-1):
+		printCell = worksheet.cell(row=writeRow+x, column=loc2)
+		printCell.value = pump_compr_arr[x]
+	idx = 0
+	loc = 0
+	radfrac_arr = ["Condenser Boundary temperature, K","Condenser Entropy Effect (kW/K)","Condenser Heat Effect (MW)",
+	"Condenser Work Effect (MW)","Reboiler Boundary temperature, K","Reboiler Entropy Effect (kW/K)","Reboiler Heat Effect (MW)","Reboiler Work Effect (MW)"]
+	for column in worksheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=worksheet.max_column, values_only=True):
+		idx += 1
+		if(column[0] == "RadFrac"):
+			loc = idx
+	for x in range(len(radfrac_arr)-1):
+		printCell = worksheet.cell(row=writeRow+x, column=loc)
+		printCell.value = radfrac_arr[x]
 
 def intialCleanup(worksheet):
     removeRowsBelow(worksheet)
@@ -220,12 +247,12 @@ def main():
     """
     #Begin work on models workbook 
     modelWorkbook = inputData["modelbookName"]
-    calculationBlocks = inputData["calculationBlocks"]
     print("Working on:" + str(modelWorkbook))
     wb = openpyxl.load_workbook(modelWorkbook)
     overallWS = copyWorksheet(wb, "Overall")
     overallTitle = inputData["modelTitle"]
-    writeSections(overallWS, calculationBlocks)
+    writeRow = writeSections(overallWS) #Pretty bad coding here, could use global but quick fix
+    writeOtherSections(overallWS,writeRow)
     wb.save(modelWorkbook)
 
 if __name__ == '__main__':

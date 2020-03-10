@@ -14,3 +14,5 @@ Should have a phase row
 
 Questions: What happens if both in and out? No such case in sample example (6)
 Insert into the top cell of each column the section name of the block, where are we getting these section names from? (9)
+Mixer entropy generated not shown in example (10)
+Step (11), which ones are heaters and how is the inlet/outlet calculated exactly?
