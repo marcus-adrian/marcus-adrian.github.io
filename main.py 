@@ -172,10 +172,25 @@ def writeSections(worksheet, inputArr):
 	locationDict = dict(zip(startColArr, compArr))
 	for x in locationDict:
 		if locationDict[x] in inputArr:
-			print(x)
 			for cntr in range(len(inputArr)):
 				printCell = worksheet.cell(row=writeRow + cntr, column=x)
 				printCell.value = nameArr[cntr]
+	totalsColumn = 0
+	lastItem = inputArr[len(inputArr) - 1]
+	idx = 0
+	for column in worksheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=worksheet.max_column, values_only= True):
+		idx += 1
+		if(column[0] == lastItem):
+			totalsColumn = idx + 1
+	printCell = worksheet.cell(row=writeRow-1, column=totalsColumn+4)
+	printCell.value = "Totals"
+	printCell = worksheet.cell(row=writeRow-1, column=totalsColumn+5)
+	printCell.value = "Sum"
+	# TODO: Add the section names as well as total and sum
+
+
+
+
 
 def intialCleanup(worksheet):
     removeRowsBelow(worksheet)
@@ -212,5 +227,6 @@ def main():
     overallTitle = inputData["modelTitle"]
     writeSections(overallWS, calculationBlocks)
     wb.save(modelWorkbook)
+
 if __name__ == '__main__':
     main()

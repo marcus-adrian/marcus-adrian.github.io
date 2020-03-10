@@ -13,5 +13,4 @@ Should have a phase row
 
 
 Questions: What happens if both in and out? No such case in sample example (6)
-Insert into the top cell of each column the section name of the block (9)
-In a cell below the last filled row with the most property labels (9) -- Assumed after last section from before
+Insert into the top cell of each column the section name of the block, where are we getting these section names from? (9)
