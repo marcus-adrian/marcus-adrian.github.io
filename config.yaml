@@ -1,6 +1,7 @@
 workbookName: "ICINoHIStreams.xlsx"
 modelbookName: "ICINoHIModels9-24.xlsx"
-overallTitle: "ICI Methanol Streams"
-roee: [preperation,synthesis,finishing]
+streamTitle: "ICI Methanol Streams"
+modelTitle: "Methanol ICI Syntex Quench"
+calculationBlocks: [Heater, HXFlux, Flash2, RPlug]
 computer: [preperation, s1,s2,s3]
 test: 3
