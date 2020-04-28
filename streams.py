@@ -34,27 +34,93 @@ def removeRowsBelow(worksheet):
 	worksheet.delete_rows(massFlowArr[0] + 1, worksheet.max_row) #Delete from first mass flow cell down
 
 def removeZeroRows(worksheet):
-    maxRow = worksheet.max_row
-    maxCol = worksheet.max_column
-    rowNum = 3
-    
-    for row in worksheet.iter_rows(min_col=3, max_col=maxCol, min_row=3, max_row=maxRow, values_only=True):
-        allString = False
-        zeroFlag = False #Assume all zero
-        for item in row:
-            if(isinstance(item, (float, int))): #Is a number?
-                if(item != None):
-                    if(item != 0):
-                        zeroFlag = True
-        for item in row:
-            if (isinstance(item, str)):
-                allString = True
-        if(zeroFlag == False and allString == False):
-            worksheet.delete_rows(rowNum, 1)
+	maxRow = worksheet.max_row
+	maxCol = worksheet.max_column
+	rowNum = 3
+	
+	for row in worksheet.iter_rows(min_col=3, max_col=maxCol, min_row=3, max_row=maxRow, values_only=True):
+		allString = False
+		zeroFlag = False #Assume all zero
+		for item in row:
+			if(isinstance(item, (float, int))): #Is a number?
+				if(item != None):
+					if(item != 0):
+						zeroFlag = True
+		for item in row:
+			if (isinstance(item, str)):
+				allString = True
+		if(zeroFlag == False and allString == False):
+			worksheet.delete_rows(rowNum, 1)
+		rowNum += 1
 
-        rowNum += 1
-#Step 6
-def initialCleanup(worksheet):
+def addTitle(worksheet, title):
+	worksheet.insert_rows(1)
+	worksheet['A1'] = title
+
+def addInOutRows(worksheet):
+	worksheet.insert_rows(2)
+	worksheet['A2'] = "Section In"
+	worksheet.insert_rows(3)
+	worksheet['A3'] = "Section Out"
+	worksheet.merge_cells('A2:CO2') #WHAT A CRAZY FIX WHY
+	worksheet.unmerge_cells('A2:CO2') #Three hours of my life gone
+
+def entropyCalculations(worksheet):
+	rowIdx = 0
+	maxRow = worksheet.max_row
+	maxCol = worksheet.max_column
+	flag = False
+	for row in worksheet.iter_rows(min_row=1, min_col=1,
+		max_col=1, max_row=maxRow, values_only=True):
+		rowIdx += 1
+		for item in row:
+			if(item == "Enthalpy Flow"):
+				flag = True #found the one row I needed
+				newRow = rowIdx + 1
+				worksheet.insert_rows(newRow, 2) #Create new row below Enthalpy
+				titleCell = "A" + str(newRow)
+				unitCell = "B" + str(newRow)
+				worksheet[titleCell] = "Entropy Flow" #Add new name for row
+				worksheet[unitCell] = "kW/K"
+				titleCell = "A" + str(newRow + 1)
+				unitCell = "B" + str(newRow + 1)
+				worksheet[titleCell] = "Exergy Flow" #Add new name for row
+				worksheet[unitCell] = "MW"
+		if(flag):
+			break
+
+	conversionFactor = 3600 * 1000
+
+	stream_molar_flow = findRowWithKey(worksheet, "Mole Flows")
+	stream_molar_flow_units = "B" + str(stream_molar_flow)
+	stream_molar_entropy = findRowWithKey(worksheet, "Molar Entropy")
+	stream_molar_entropy_units = "B" + str(stream_molar_entropy)
+
+	for row_cells in worksheet.iter_rows(min_row=newRow, max_row=newRow,
+		min_col=3, max_col=maxCol):
+		for cell in row_cells:
+			firstValue = worksheet[str(cell.column_letter) + str(stream_molar_entropy)]
+			secondValue = worksheet[str(cell.column_letter) + str(stream_molar_flow)]
+			if(firstValue.value != None and secondValue.value != None):
+				if(worksheet[stream_molar_flow_units].value == "kmol/hr" and 
+					worksheet[stream_molar_entropy_units].value == "J/kmol-K"):
+					calculatedValue = (firstValue.value * secondValue.value)/conversionFactor
+				else:
+					calculatedValue = 1
+					print("Unit error in calculating Entropy Flow, required: \n")
+					print("Mole Flow Rate: kmol/hr")
+					print("Entropy Mixture: J/kmol-K")
+				cell.value = calculatedValue
+			#Exergy Calculations
+			firstValue = worksheet[str(cell.column_letter) + str(findRowWithKey(worksheet, "Enthalpy Flow"))]
+			secondValue = worksheet[str(cell.column_letter) + str(findRowWithKey(worksheet, "Entropy Flow"))]
+			if(firstValue.value != None and secondValue.value != None):
+				calculatedValue = firstValue.value - (0.3 * secondValue.value)
+				cell.offset(row=1).value = calculatedValue
+
+	worksheet.delete_rows(findRowWithKey(worksheet, "Description"), 1)
+
+def stepSix(worksheet):
 	#Lesson, do not use array for deleting rows because they change dynamically per each deletion
 	worksheet.delete_rows(1, 2)
 	worksheet.delete_rows(findRowWithKey(worksheet, "Maximum Relative Error"), 1)
@@ -79,6 +145,14 @@ def initialCleanup(worksheet):
 			if(col[0].value != None):
 				newVal = col[0].value / 1000000
 				col[0].value = newVal
+
+def stepSeven(worksheet,title):
+	addTitle(worksheet,title)
+	addInOutRows(worksheet)
+	entropyCalculations(worksheet)
+	freezeCells = worksheet['C7']
+	worksheet.freeze_panes = freezeCells
+
 def main():
 	print("Main Source file called")
 	inputData = getConfigVariables()
@@ -88,7 +162,8 @@ def main():
 	modifiedWS = copyWorksheet(wb, "Aspen Data Tables Modified")
 	modifiedWS_title = inputData["streamTitle"]
 	#Begin work on streams workbook
-	initialCleanup(modifiedWS)    
+	stepSix(modifiedWS)
+	stepSeven(modifiedWS, inputData["streamTitle"])   
 	#setupWB(overallWS, overallTitle)
 	#entropyCalculations(overallWS)
 	wb.save(streamWorkbook)
