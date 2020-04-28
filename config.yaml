@@ -1,6 +1,6 @@
-workbookName: "ICINoHIStreams.xlsx"
-modelbookName: "ICINoHIModels9-24.xlsx"
-streamTitle: "ICI Methanol Streams"
+streamBookName: "AspenStreams03122020.xlsx"
+modelBookName: "ICINoHIModels9-24.xlsx"
+streamTitle: "ICI No HI 8-16R"
 modelTitle: "Methanol ICI Syntex Quench"
 calculationBlocks: [Heater, HXFlux, Flash2, RPlug]
 computer: [preperation, s1,s2,s3]
