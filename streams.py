@@ -1,5 +1,6 @@
 import yaml
 import openpyxl
+from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
 #Retrieves data from the YAML file and returns a dictionary with the vals.
 def getConfigVariables():
@@ -120,6 +121,47 @@ def entropyCalculations(worksheet):
 
 	worksheet.delete_rows(findRowWithKey(worksheet, "Description"), 1)
 
+#Returns column letter of first blank after to and from rows
+def findBlank(worksheet):
+	to_idx = findRowWithKey(worksheet, "To")
+	from_idx = findRowWithKey(worksheet, "From")
+
+	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=worksheet.max_column):
+		for cell in col:
+			to_cell = str(cell.column_letter) + str(to_idx)
+			from_cell = str(cell.column_letter) + str(from_idx)
+			if worksheet[to_cell].value == None and worksheet[from_cell].value == None:
+				return cell.column_letter
+				#worksheet.delete_cols(cell.column_letter,1)
+
+def removeColumns(worksheet):
+	to_idx = findRowWithKey(worksheet, "To")
+	from_idx = findRowWithKey(worksheet, "From")
+	endCol = column_index_from_string(findBlank(worksheet))
+	delArray = []
+	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=endCol):
+		for cell in col:
+			to_cell = str(cell.column_letter) + str(to_idx)
+			from_cell = str(cell.column_letter) + str(from_idx)
+			if worksheet[to_cell].value != None and worksheet[from_cell].value != None:
+				delArray.append(column_index_from_string(cell.column_letter))
+	for i in reversed(delArray):
+		worksheet.delete_cols(i,1)
+
+def addInOutValues(worksheet):
+	to_idx = findRowWithKey(worksheet, "To")
+	from_idx = findRowWithKey(worksheet, "From")
+	endCol = column_index_from_string(findBlank(worksheet))
+	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=endCol):
+		for cell in col:
+			write_cell = str(cell.column_letter) + str(1)
+			to_cell = str(cell.column_letter) + str(to_idx)
+			from_cell = str(cell.column_letter) + str(from_idx)
+			if worksheet[to_cell].value != None:
+				worksheet[write_cell] = "In"
+			if worksheet[from_cell].value != None:
+				worksheet[write_cell] = "Out"
+
 def stepSix(worksheet):
 	#Lesson, do not use array for deleting rows because they change dynamically per each deletion
 	worksheet.delete_rows(1, 2)
@@ -153,6 +195,13 @@ def stepSeven(worksheet,title):
 	freezeCells = worksheet['C7']
 	worksheet.freeze_panes = freezeCells
 
+def stepEight(worksheet):
+	freezeCells = worksheet['C7']
+	worksheet.freeze_panes = freezeCells
+	removeColumns(worksheet)
+	addInOutValues(worksheet)
+
+
 def main():
 	print("Main Source file called")
 	inputData = getConfigVariables()
@@ -160,12 +209,13 @@ def main():
 	print("Working on: " + str(streamWorkbook))
 	wb = openpyxl.load_workbook(streamWorkbook)
 	modifiedWS = copyWorksheet(wb, "Aspen Data Tables Modified")
-	modifiedWS_title = inputData["streamTitle"]
 	#Begin work on streams workbook
 	stepSix(modifiedWS)
-	stepSeven(modifiedWS, inputData["streamTitle"])   
-	#setupWB(overallWS, overallTitle)
-	#entropyCalculations(overallWS)
+	stepSeven(modifiedWS, inputData["streamTitle"]) 
+	wb.save(streamWorkbook)
+	overall = wb.copy_worksheet(modifiedWS)
+	overall.title = "Overall"
+	stepEight(overall)
 	wb.save(streamWorkbook)
 	print("Completed first workbook - Steps 6-8")
 
