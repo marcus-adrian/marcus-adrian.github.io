@@ -1,59 +1,39 @@
 # Automation of Entropy Generation Calculations
-
-Blah blah blah... template
+A Senior Project supported by the Electrical Engineering and Computer Engineering departments of California Polytechnic State University -- San Luis Obispo. The project is developed under the advising of Professors John P. O'Connell and William L. Ahlgren. 
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
+
+Running the program is easy, however there are several prerequisites to getting started. Please see down below. 
+
+To begin, git clone the project onto your local machine. This can be done by copying the [github link]("https://github.com/rlandesman/GreenAmmoniaProject.git") (found on the website or the hyperlink) and typing the following into your terminal
+
 ```
-python3 main.py\ 
+git clone <link>
 ```
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+There are several software packages that are neccessary for the successful deployment of this software.
 
-```
-Give examples
-```
+First, Python3 is a must for running the script. Please [install Python3.x ](https://www.python.org/downloads/ "Python Download Page") for your specific operating system 
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
+Next, you will need to install the appropriate support libraries. In your command line, please enter the directory into which you installed the project
+Then enter the following commands
 
 ```
-until finished
+pip install PyYAML
+pip install openpyxl
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
+Note: All user-requested parameters can conveniently be found in a file titled config.yaml. For testing purposes, these values have been pre-determined, but can be further customized by changing the value fields (strings only) inside this file. 
 
 ### And coding style tests
 
-Explain what these tests test and why
-
-```
-Give an example
-```
+For readability and documentation purposes the Python code was developed accoridng to the steps laid out by Professor O'Connells instructions.
 
 ## Deployment
 

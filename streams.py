@@ -147,7 +147,7 @@ def removeColumns(worksheet):
 				delArray.append(column_index_from_string(cell.column_letter))
 	for i in reversed(delArray):
 		worksheet.delete_cols(i,1)
-
+	
 def addInOutValues(worksheet):
 	to_idx = findRowWithKey(worksheet, "To")
 	from_idx = findRowWithKey(worksheet, "From")
@@ -161,6 +161,9 @@ def addInOutValues(worksheet):
 				worksheet[write_cell] = "In"
 			if worksheet[from_cell].value != None:
 				worksheet[write_cell] = "Out"
+
+	worksheet.delete_cols(endCol, worksheet.max_column) #Admittedly random but will fix later
+
 
 def stepSix(worksheet):
 	#Lesson, do not use array for deleting rows because they change dynamically per each deletion
