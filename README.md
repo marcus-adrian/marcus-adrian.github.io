@@ -55,16 +55,10 @@ Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c6
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+ * **[Roee Landesman](rlandesm@calpoly.edu)**
+ * **[Marcus Adrian Lapena Laguisma](mlaguism@calpoly.edu)**
+ * **[Dylan Carr](dscarr94@gmail.com)**
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
