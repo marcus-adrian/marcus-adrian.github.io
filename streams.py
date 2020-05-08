@@ -1,20 +1,27 @@
 import yaml
 import openpyxl
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+from openpyxl.styles import Color, PatternFill, Font, Border
+from openpyxl.styles import colors
+# from progress.spinner import PixelSpinner
+
+HIGHLIGHT_COLOR = PatternFill(start_color='eaf57c',
+                   end_color='eaf57c',
+                   fill_type='solid')
 
 #Retrieves data from the YAML file and returns a dictionary with the vals.
-def getConfigVariables():
+def get_config_variables():
 	with open('config.yaml') as f:
 		data = yaml.load(f, Loader=yaml.FullLoader)
 		return data
 
-def copyWorksheet(workbook, sheetName):
+def copy_worksheet(workbook, sheetName):
 	source = workbook.active
 	target = workbook.copy_worksheet(source)
 	target.title = sheetName
 	return target
 
-def findRowWithKey(worksheet, key):
+def find_row_with_key(worksheet, key):
 	rowNum = 0 #loop through and find row for key
 	for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=1, values_only=True):
 		rowNum += 1
@@ -92,9 +99,9 @@ def entropyCalculations(worksheet):
 
 	conversionFactor = 3600 * 1000
 
-	stream_molar_flow = findRowWithKey(worksheet, "Mole Flows")
+	stream_molar_flow = find_row_with_key(worksheet, "Mole Flows")
 	stream_molar_flow_units = "B" + str(stream_molar_flow)
-	stream_molar_entropy = findRowWithKey(worksheet, "Molar Entropy")
+	stream_molar_entropy = find_row_with_key(worksheet, "Molar Entropy")
 	stream_molar_entropy_units = "B" + str(stream_molar_entropy)
 
 	for row_cells in worksheet.iter_rows(min_row=newRow, max_row=newRow,
@@ -113,18 +120,18 @@ def entropyCalculations(worksheet):
 					print("Entropy Mixture: J/kmol-K")
 				cell.value = calculatedValue
 			#Exergy Calculations
-			firstValue = worksheet[str(cell.column_letter) + str(findRowWithKey(worksheet, "Enthalpy Flow"))]
-			secondValue = worksheet[str(cell.column_letter) + str(findRowWithKey(worksheet, "Entropy Flow"))]
+			firstValue = worksheet[str(cell.column_letter) + str(find_row_with_key(worksheet, "Enthalpy Flow"))]
+			secondValue = worksheet[str(cell.column_letter) + str(find_row_with_key(worksheet, "Entropy Flow"))]
 			if(firstValue.value != None and secondValue.value != None):
 				calculatedValue = firstValue.value - (0.3 * secondValue.value)
 				cell.offset(row=1).value = calculatedValue
 
-	worksheet.delete_rows(findRowWithKey(worksheet, "Description"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Description"), 1)
 
 #Returns column letter of first blank after to and from rows
-def findBlank(worksheet):
-	to_idx = findRowWithKey(worksheet, "To")
-	from_idx = findRowWithKey(worksheet, "From")
+def find_blank(worksheet):
+	to_idx = find_row_with_key(worksheet, "To")
+	from_idx = find_row_with_key(worksheet, "From")
 
 	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=worksheet.max_column):
 		for cell in col:
@@ -135,9 +142,9 @@ def findBlank(worksheet):
 				#worksheet.delete_cols(cell.column_letter,1)
 
 def removeColumns(worksheet):
-	to_idx = findRowWithKey(worksheet, "To")
-	from_idx = findRowWithKey(worksheet, "From")
-	endCol = column_index_from_string(findBlank(worksheet))
+	to_idx = find_row_with_key(worksheet, "To")
+	from_idx = find_row_with_key(worksheet, "From")
+	endCol = column_index_from_string(find_blank(worksheet))
 	delArray = []
 	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=endCol):
 		for cell in col:
@@ -149,9 +156,9 @@ def removeColumns(worksheet):
 		worksheet.delete_cols(i,1)
 	
 def addInOutValues(worksheet):
-	to_idx = findRowWithKey(worksheet, "To")
-	from_idx = findRowWithKey(worksheet, "From")
-	endCol = column_index_from_string(findBlank(worksheet))
+	to_idx = find_row_with_key(worksheet, "To")
+	from_idx = find_row_with_key(worksheet, "From")
+	endCol = column_index_from_string(find_blank(worksheet))
 	for col in worksheet.iter_cols(min_row=to_idx, max_row=to_idx, min_col=3, max_col=endCol):
 		for cell in col:
 			write_cell = str(cell.column_letter) + str(1)
@@ -162,26 +169,64 @@ def addInOutValues(worksheet):
 			if worksheet[from_cell].value != None:
 				worksheet[write_cell] = "Out"
 
-	worksheet.delete_cols(endCol, worksheet.max_column) #Admittedly random but will fix later
+	worksheet.delete_cols(endCol, worksheet.max_column) 
 
+def calculate_balance(worksheet):
+	enthalpy_flow = find_row_with_key(worksheet, "Enthalpy Flow")
+	enthalpy_sum = 0 #Initialize counter
+	for col in worksheet.iter_cols(min_row=enthalpy_flow, max_row=enthalpy_flow, min_col=3, max_col=worksheet.max_column):
+		lastCol = col
+		for cell in col:
+			in_out_row = str(cell.column_letter) + "1"
+			if worksheet[in_out_row].value == "In": #Check if the first row in this col has In or Out
+				enthalpy_sum += cell.value 			#If In, Add to the sum
+			if worksheet[in_out_row].value == "Out":
+				enthalpy_sum -= cell.value 			#If out, Subtract from sum
+	lastCol[0].offset(column=1).value = enthalpy_sum
+	lastCol[0].offset(column=1).fill = HIGHLIGHT_COLOR
 
-def stepSix(worksheet):
+	entropy_flow = find_row_with_key(worksheet, "Entropy Flow")
+	entropy_sum = 0 #Initialize counter	
+	for col in worksheet.iter_cols(min_row=entropy_flow, max_row=entropy_flow, min_col=3, max_col=worksheet.max_column):
+		for cell in col:
+			in_out_row = str(cell.column_letter) + "1"
+			if worksheet[in_out_row].value == "In": #Check if the first row in this col has In or Out
+				entropy_sum += cell.value 			#If In, Add to the sum
+			if worksheet[in_out_row].value == "Out":
+				entropy_sum -= cell.value 			#If out, Subtract from sum
+	lastCol[0].offset(row=1,column=1).value = entropy_sum
+	lastCol[0].offset(row=1,column=1).fill = HIGHLIGHT_COLOR
+
+	exergy_flow = find_row_with_key(worksheet, "Exergy Flow")
+	exergy_sum = 0 #Initialize counter	
+	for col in worksheet.iter_cols(min_row=exergy_flow, max_row=exergy_flow, min_col=3, max_col=worksheet.max_column):
+		for cell in col:
+			in_out_row = str(cell.column_letter) + "1"
+			if worksheet[in_out_row].value == "In": #Check if the first row in this col has In or Out
+				exergy_sum += cell.value 			#If In, Add to the sum
+			if worksheet[in_out_row].value == "Out":
+				exergy_sum -= cell.value 			#If out, Subtract from sum
+	lastCol[0].offset(row=2,column=1).value = exergy_sum
+	lastCol[0].offset(row=2,column=1).fill = HIGHLIGHT_COLOR
+	worksheet[(str((lastCol[0].offset(column=1)).column_letter) + "1")].value = "Balances" #Convoluted, just add title to cell
+
+def step_six(worksheet):
 	#Lesson, do not use array for deleting rows because they change dynamically per each deletion
 	worksheet.delete_rows(1, 2)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Maximum Relative Error"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Cost Flow"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "MIXED Substream"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Vapor Fraction"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Liquid Fraction"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Solid Fraction"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Enthalpy"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Entropy"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Mass Density"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Molar Liquid Fraction"), 1)
-	worksheet.delete_rows(findRowWithKey(worksheet, "Molar Solid Fraction"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Maximum Relative Error"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Cost Flow"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "MIXED Substream"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Vapor Fraction"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Liquid Fraction"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Solid Fraction"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Enthalpy"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Entropy"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Mass Density"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Molar Liquid Fraction"), 1)
+	worksheet.delete_rows(find_row_with_key(worksheet, "Molar Solid Fraction"), 1)
 	removeRowsBelow(worksheet)
 	removeZeroRows(worksheet)
-	enthalpy_flow = findRowWithKey(worksheet, "Enthalpy Flow")
+	enthalpy_flow = find_row_with_key(worksheet, "Enthalpy Flow")
 	enthalpy_flow_units = "B" + str(enthalpy_flow)
 	if(worksheet[enthalpy_flow_units].value == "W"):
 		print("Enthalpy Flow in Watts, converting to MW")
@@ -191,36 +236,43 @@ def stepSix(worksheet):
 				newVal = col[0].value / 1000000
 				col[0].value = newVal
 
-def stepSeven(worksheet,title):
+def step_seven(worksheet,title):
 	addTitle(worksheet,title)
 	addInOutRows(worksheet)
 	entropyCalculations(worksheet)
 	freezeCells = worksheet['C7']
 	worksheet.freeze_panes = freezeCells
 
-def stepEight(worksheet):
+def step_eight(worksheet):
 	freezeCells = worksheet['C7']
 	worksheet.freeze_panes = freezeCells
 	removeColumns(worksheet)
 	addInOutValues(worksheet)
 
+def step_nine(worksheet):
+	calculate_balance(worksheet)
 
 def main():
+	# state = False
+	# spinner = PixelSpinner('Loading ')
+	# while state != True:
+	# 	spinner.next()
 	print("Main Source file called")
-	inputData = getConfigVariables()
+	inputData = get_config_variables()
 	streamWorkbook = inputData["streamBookName"]
 	print("Working on: " + str(streamWorkbook))
 	wb = openpyxl.load_workbook(streamWorkbook)
-	modifiedWS = copyWorksheet(wb, "Aspen Data Tables Modified")
+	modifiedWS = copy_worksheet(wb, "Aspen Data Tables Modified")
 	#Begin work on streams workbook
-	stepSix(modifiedWS)
-	stepSeven(modifiedWS, inputData["streamTitle"]) 
+	step_six(modifiedWS)
+	step_seven(modifiedWS, inputData["streamTitle"]) 
 	wb.save(streamWorkbook)
 	overall = wb.copy_worksheet(modifiedWS)
 	overall.title = "Overall"
-	stepEight(overall)
+	step_eight(overall)
+	step_nine(overall)
 	wb.save(streamWorkbook)
-	print("Completed first workbook - Steps 6-8")
+	print("Completed first workbook - Steps 6-9")
 
 if __name__ == '__main__':
 	main()
