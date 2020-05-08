@@ -33,9 +33,11 @@ Note: All user-requested parameters can conveniently be found in a file titled c
 
 ## Program Execution
 To execute the script, type into your command line the following instruction
+I manually turn off warnings, you could keep it but they are useless and mess
+with the progress bar :) 
 
 ```
-python3 streams.py
+python3 -Wd streams.py
 ```
 
 The output will be found in the (now modified) excel sheets the user provided

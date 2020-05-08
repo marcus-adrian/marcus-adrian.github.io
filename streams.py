@@ -3,8 +3,9 @@ import openpyxl
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles import colors
-# from progress.spinner import PixelSpinner
-
+import time
+import sys
+from tqdm import tqdm
 HIGHLIGHT_COLOR = PatternFill(start_color='eaf57c',
                    end_color='eaf57c',
                    fill_type='solid')
@@ -253,26 +254,29 @@ def step_nine(worksheet):
 	calculate_balance(worksheet)
 
 def main():
-	# state = False
-	# spinner = PixelSpinner('Loading ')
-	# while state != True:
-	# 	spinner.next()
-	print("Main Source file called")
-	inputData = get_config_variables()
-	streamWorkbook = inputData["streamBookName"]
-	print("Working on: " + str(streamWorkbook))
-	wb = openpyxl.load_workbook(streamWorkbook)
-	modifiedWS = copy_worksheet(wb, "Aspen Data Tables Modified")
-	#Begin work on streams workbook
-	step_six(modifiedWS)
-	step_seven(modifiedWS, inputData["streamTitle"]) 
-	wb.save(streamWorkbook)
-	overall = wb.copy_worksheet(modifiedWS)
-	overall.title = "Overall"
-	step_eight(overall)
-	step_nine(overall)
-	wb.save(streamWorkbook)
-	print("Completed first workbook - Steps 6-9")
+	with tqdm(total=100, file=sys.stdout) as pbar:
+		for i in range(1):
+			#print("Main Source file called")
+			pbar
+			inputData = get_config_variables()
+			streamWorkbook = inputData["streamBookName"]
+			#print("Working on: " + str(streamWorkbook))
+			wb = openpyxl.load_workbook(streamWorkbook)
+			modifiedWS = copy_worksheet(wb, "Aspen Data Tables Modified")
+			#Begin work on streams workbook
+			step_six(modifiedWS)
+			pbar.update(25)
+			step_seven(modifiedWS, inputData["streamTitle"]) 
+			wb.save(streamWorkbook)
+			overall = wb.copy_worksheet(modifiedWS)
+			overall.title = "Overall"
+			pbar.update(25)
+			step_eight(overall)
+			pbar.update(25)
+			step_nine(overall)
+			wb.save(streamWorkbook)
+			pbar.update(25)
+	#print("Completed first workbook - Steps 6-9")
 
 if __name__ == '__main__':
 	main()
