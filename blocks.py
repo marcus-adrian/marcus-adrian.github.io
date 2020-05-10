@@ -65,12 +65,16 @@ def add_text(worksheet, title, overall_text):
 				thisCell.value = temp
 
 	block_name_array = []
+	idx = 0
 	for col in worksheet.iter_rows(min_row=2, max_row=2):
 		for cell in col:
 			if(cell.value != None):
 				block_name_array.append(cell.value)
-				
-	for row in worksheet.iter_rows()
+	for col in worksheet.iter_cols(min_row=64, max_row=64):
+		for cell in col:
+			if cell.value == "Block Type":
+				cell.offset(column=1).value = block_name_array[idx]
+				idx += 1
 
 
 def copy_worksheet(workbook, sheetName):
