@@ -257,7 +257,6 @@ def main():
 	with tqdm(total=100, file=sys.stdout) as pbar:
 		for i in range(1):
 			#print("Main Source file called")
-			pbar
 			inputData = get_config_variables()
 			streamWorkbook = inputData["streamBookName"]
 			#print("Working on: " + str(streamWorkbook))

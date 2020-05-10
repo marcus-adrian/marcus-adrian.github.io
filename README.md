@@ -27,9 +27,10 @@ Then enter the following commands
 ```
 pip install PyYAML
 pip install openpyxl
+pip install tqdm
 ```
 
-Note: All user-requested parameters can conveniently be found in a file titled config.yaml. For testing purposes, these values have been pre-determined, but can be further customized by changing the value fields (strings only) inside this file. 
+NOTE: All user-requested parameters can conveniently be found in a file titled config.yaml. For testing purposes, these values have been pre-determined, but **should** be  customized by changing the value fields (strings only) inside this file for non-demo production use.
 
 ## Program Execution
 To execute the script, type into your command line the following instruction
