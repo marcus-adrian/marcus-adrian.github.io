@@ -83,6 +83,9 @@ def copy_worksheet(workbook, sheetName):
 	target.title = sheetName
 	return target
 
+def step_twelve(worksheet):
+	pass
+
 def main():
 	with tqdm(total=100, file=sys.stdout) as pbar:
 		for i in range(1):
@@ -90,19 +93,16 @@ def main():
 				inputData = get_config_variables()
 				modelWorkbook = inputData["modelBookName"]
 				print("Working on:" + str(modelWorkbook))
-				wb = openpyxl.load_workbook(modelWorkbook)
+				wb_block = openpyxl.load_workbook(modelWorkbook)
 				overallTitle = inputData["modelTitle"]
-				overallWS = copy_worksheet(wb, "Overall")
+				overallWS = copy_worksheet(wb_block, "Overall")
 				overall_text_add = inputData["overall_text_add"]
 				add_text(overallWS, overallTitle, overall_text_add)
-				wb.save(modelWorkbook)
-				pbar.update(100)
-
-				"""
-				writeRow = writeSections(overallWS) #Pretty bad coding here, could use global but quick fix
-				writeOtherSections(overallWS,writeRow)
-				wb.save(modelWorkbook)
-				"""
+				wb_block.save(modelWorkbook)
+				pbar.update(50)
+				#step_twelve(overallWS)
+				wb_block.save(modelWorkbook)
+				pbar.update(50)
 
 if __name__ == '__main__':
 	main()

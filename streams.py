@@ -6,9 +6,15 @@ from openpyxl.styles import colors
 import time
 import sys
 from tqdm import tqdm
-HIGHLIGHT_COLOR = PatternFill(start_color='eaf57c',
-                   end_color='eaf57c',
-                   fill_type='solid')
+YELLOW_HIGHLIGHT = PatternFill(start_color='ffff00',
+				   end_color='ffff00',
+				   fill_type='solid')
+GREEN_HIGHLIGHT = PatternFill(start_color='90ee90',
+				   end_color='90ee90',
+				   fill_type='solid')
+ORANGE_HIGHLIGHT = PatternFill(start_color='ffa500',
+				   end_color='ffa500',
+				   fill_type='solid')
 
 #Retrieves data from the YAML file and returns a dictionary with the vals.
 def get_config_variables():
@@ -184,7 +190,7 @@ def calculate_balance(worksheet):
 			if worksheet[in_out_row].value == "Out":
 				enthalpy_sum -= cell.value 			#If out, Subtract from sum
 	lastCol[0].offset(column=1).value = enthalpy_sum
-	lastCol[0].offset(column=1).fill = HIGHLIGHT_COLOR
+	lastCol[0].offset(column=1).fill = YELLOW_HIGHLIGHT
 
 	entropy_flow = find_row_with_key(worksheet, "Entropy Flow")
 	entropy_sum = 0 #Initialize counter	
@@ -196,7 +202,7 @@ def calculate_balance(worksheet):
 			if worksheet[in_out_row].value == "Out":
 				entropy_sum -= cell.value 			#If out, Subtract from sum
 	lastCol[0].offset(row=1,column=1).value = entropy_sum
-	lastCol[0].offset(row=1,column=1).fill = HIGHLIGHT_COLOR
+	lastCol[0].offset(row=1,column=1).fill = YELLOW_HIGHLIGHT
 
 	exergy_flow = find_row_with_key(worksheet, "Exergy Flow")
 	exergy_sum = 0 #Initialize counter	
@@ -208,7 +214,7 @@ def calculate_balance(worksheet):
 			if worksheet[in_out_row].value == "Out":
 				exergy_sum -= cell.value 			#If out, Subtract from sum
 	lastCol[0].offset(row=2,column=1).value = exergy_sum
-	lastCol[0].offset(row=2,column=1).fill = HIGHLIGHT_COLOR
+	lastCol[0].offset(row=2,column=1).fill = YELLOW_HIGHLIGHT
 	worksheet[(str((lastCol[0].offset(column=1)).column_letter) + "1")].value = "Balances" #Convoluted, just add title to cell
 
 def step_six(worksheet):
@@ -237,6 +243,64 @@ def step_six(worksheet):
 				newVal = col[0].value / 1000000
 				col[0].value = newVal
 
+def add_text(worksheet, title, overall_text):
+	worksheet['A1'] = title
+	cnt = 0
+	name_array= []
+	for col in worksheet.iter_rows(min_row=3, max_row=3):
+		for cell in col:
+			if(cell.value == "Name"):
+				name_array.append(cell.col_idx)
+	
+	for x in name_array:
+		cnt = 0
+		for col in worksheet.iter_rows(min_row=64, max_row=110, min_col=x, max_col=x):
+			for cell in col:
+				if (overall_text[cnt] == "Inlet Stream 1 Name"
+					or overall_text[cnt] == "Inlet Stream 2 Name"
+					or overall_text[cnt] == "Inlet Stream 3 Name"
+					or overall_text[cnt] == "Inlet Stream 4 Name"):
+					cell.fill = YELLOW_HIGHLIGHT
+				if (overall_text[cnt] == "Outlet Stream 1 Name"
+					or overall_text[cnt] == "Outlet Stream 2 Name"
+					or overall_text[cnt] == "Outlet Stream 3 Name"
+					or overall_text[cnt] == "Outlet Stream 4 Name"
+					or overall_text[cnt] == "Outlet Stream 5 Name"
+					or overall_text[cnt] == "Outlet Stream 6 Name"):
+					cell.fill = ORANGE_HIGHLIGHT
+				if (overall_text[cnt] == "Mass balance kg/hr"
+					or overall_text[cnt] == "Energy Balance MW"
+					or overall_text[cnt] == "Entropy Generation kW/K"):
+					cell.fill=GREEN_HIGHLIGHT
+				cell.value = overall_text[cnt]
+			cnt += 1
+
+	for col in worksheet.iter_rows(min_row=3, max_row=3):
+		for cell in col:
+			if(cell.value != "Name" and cell.value != None):
+				temp = cell.value
+				thisCell = cell.offset(row=62)
+				thisCell.value = temp
+
+	block_name_array = []
+	idx = 0
+	for col in worksheet.iter_rows(min_row=2, max_row=2):
+		for cell in col:
+			if(cell.value != None):
+				block_name_array.append(cell.value)
+	for col in worksheet.iter_cols(min_row=64, max_row=64):
+		for cell in col:
+			if cell.value == "Block Type":
+				cell.offset(column=1).value = block_name_array[idx]
+				idx += 1
+
+
+def copy_worksheet(workbook, sheetName):
+	source = workbook.active
+	target = workbook.copy_worksheet(source)
+	target.title = sheetName
+	return target
+
 def step_seven(worksheet,title):
 	addTitle(worksheet,title)
 	addInOutRows(worksheet)
@@ -253,6 +317,35 @@ def step_eight(worksheet):
 def step_nine(worksheet):
 	calculate_balance(worksheet)
 
+#Looks at the to row, returns array of tuples with format as follows:
+#	(to-row-name, stream-name)
+def prepare_for_overall_inlet(worksheet):
+	return_arr = []
+	to_row = find_row_with_key(worksheet,"To")
+	for col in worksheet.iter_cols(min_row=to_row, max_row=to_row,min_col=3):
+		for cell in col:
+			if cell.value != None:
+				return_arr.append((cell.value, (cell.offset(row=-2).value)))
+	print(return_arr)
+	return return_arr
+
+#Looks at the from row, returns array of tuples with format as follows:
+#	(from-row-name, stream-name)
+def prepare_for_overall_outlet(worksheet):
+	return_arr = []
+	from_row = find_row_with_key(worksheet,"From")
+	for col in worksheet.iter_cols(min_row=from_row, max_row=from_row,min_col=3):
+		for cell in col:
+			if cell.value != None:
+				return_arr.append((cell.value, (cell.offset(row=-2).value)))
+	return return_arr
+
+def step_twelve(worksheet, inlet_array):
+	for col in worksheet.iter_cols(min_row=65, max_row=65,min_col=2):
+		for cell in col:
+			if cell.value != "Block Name" and cell.value != None
+				for x in inlet_array
+					curr = x[0]
 def main():
 	with tqdm(total=100, file=sys.stdout) as pbar:
 		for i in range(1):
@@ -260,22 +353,39 @@ def main():
 			inputData = get_config_variables()
 			streamWorkbook = inputData["streamBookName"]
 			#print("Working on: " + str(streamWorkbook))
-			wb = openpyxl.load_workbook(streamWorkbook)
-			modifiedWS = copy_worksheet(wb, "Aspen Data Tables Modified")
+			wb_stream = openpyxl.load_workbook(streamWorkbook)
+			modifiedWS = copy_worksheet(wb_stream, "Aspen Data Tables Modified")
 			#Begin work on streams workbook
 			step_six(modifiedWS)
 			pbar.update(25)
 			step_seven(modifiedWS, inputData["streamTitle"]) 
-			wb.save(streamWorkbook)
-			overall = wb.copy_worksheet(modifiedWS)
+			wb_stream.save(streamWorkbook)
+			overall = wb_stream.copy_worksheet(modifiedWS)
 			overall.title = "Overall"
 			pbar.update(25)
 			step_eight(overall)
 			pbar.update(25)
 			step_nine(overall)
-			wb.save(streamWorkbook)
+			wb_stream.save(streamWorkbook)
 			pbar.update(25)
-	#print("Completed first workbook - Steps 6-9")
+
+	with tqdm(total=100, file=sys.stdout) as pbar:
+		for i in range(1):
+			#Begin work on models workbook 
+			inputData = get_config_variables()
+			modelWorkbook = inputData["modelBookName"]
+			print("Working on:" + str(modelWorkbook))
+			wb_block = openpyxl.load_workbook(modelWorkbook)
+			overallTitle = inputData["modelTitle"]
+			overallWS = copy_worksheet(wb_block, "Overall")
+			overall_text_add = inputData["overall_text_add"]
+			add_text(overallWS, overallTitle, overall_text_add)
+			wb_block.save(modelWorkbook)
+			pbar.update(50)
+			inlet_array = prepare_for_overall_inlet(overall)
+			step_twelve(overallWS, inlet_array)
+			wb_block.save(modelWorkbook)
+			pbar.update(50)
 
 if __name__ == '__main__':
 	main()
