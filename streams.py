@@ -343,9 +343,14 @@ def prepare_for_overall_outlet(worksheet):
 def step_twelve(worksheet, inlet_array):
 	for col in worksheet.iter_cols(min_row=65, max_row=65,min_col=2):
 		for cell in col:
-			if cell.value != "Block Name" and cell.value != None
-				for x in inlet_array
+			if cell.value != "Block Name" and cell.value != None:
+				for x in inlet_array:
 					curr = x[0]
+					if cell.value == curr:
+						print("here")
+						thisCell = cell.offset(row=1)
+						thisCell.value = x[1]
+
 def main():
 	with tqdm(total=100, file=sys.stdout) as pbar:
 		for i in range(1):
@@ -389,3 +394,10 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
+#Big question: Follow logic as such - Radfrac, in example given, under C-301 has S35D. 
+# Find this in streams and it is one of the deleted columns because both to and from are filled
+# Where is the error in this? (12)
+
+# Big Question: Did I calculate the correct rows (accoridng to example yes but the instructions are confusing)
+# What are the check that should be performed here?
